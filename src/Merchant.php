@@ -1,6 +1,6 @@
 <?php
 
-namespace akhur\sberpay;
+namespace akhur0286\sberpay;
 
 use Yii;
 use yii\base\BaseObject;
