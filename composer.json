@@ -1,0 +1,21 @@
+{
+    "name": "akhur/yii2-sberpay",
+    "description": "Библиотека для приема платежей через Сбербанк.",
+    "type": "yii2-extension",
+    "keywords": ["yii2","extension","sberpay"],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Khurshed Abduzhalil",
+            "email": "akhur02@mail.ru"
+        }
+    ],
+    "require": {
+        "yiisoft/yii2": "~2.0.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "akhur\\sberpay\\": "src"
+        }
+    }
+}
