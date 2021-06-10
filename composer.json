@@ -15,7 +15,7 @@
     },
     "autoload": {
         "psr-4": {
-            "akhur\\sberpay\\": "src"
+            "akhur0286\\sberpay\\": "src"
         }
     }
 }
