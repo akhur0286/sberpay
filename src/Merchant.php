@@ -49,13 +49,16 @@ class Merchant extends BaseObject
      */
     public $urlTest = 'https://3dsec.sberbank.ru/payment/rest/';
 
+    /* @var int Время жизни заказа в секундах */
+    public $sessionTimeoutSecs = 1200;
+
     const STATUS_SUCCESS = 2;
 
     public $orderModel;
 
     public function init()
     {
-        if (!$this->merchantLogin || !$this->merchantPassword || !$this->returnUrl || !$this->failUrl || !$this->orderModel) {
+        if (!$this->merchantLogin || !$this->merchantPassword || !$this->returnUrl || !$this->failUrl) {
             throw new InvalidConfigException('Модуль настроен не правильно, пожалуйсто прочтите документацию');
         }
 
@@ -73,7 +76,7 @@ class Merchant extends BaseObject
     public function create($orderID, $sum, $description = null, $jsonParams = null)
     {
         $data = [
-            'orderId' => $orderID,
+            'orderNumber' => $orderID,
             'amount' => $sum * 100,
             'returnUrl' => $this->returnUrl,
             'failUrl' => $this->failUrl,
@@ -84,9 +87,16 @@ class Merchant extends BaseObject
         if ($jsonParams) {
             $data['jsonParams'] = $jsonParams;
         }
-        echo '<pre>'.print_($data,1).'</pre>';die;
 
-        return $this->send('register.do', $data);
+        $response = $this->send('register.do', $data);
+
+        if (array_key_exists('errorCode', $response)) {
+            throw new ErrorException($response['errorMessage']);
+        }
+        $orderId = $response['orderId'];
+        $formUrl = $response['formUrl'];
+
+        return Yii::$app->response->redirect($formUrl);
     }
 
     /**
