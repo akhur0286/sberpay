@@ -36,7 +36,7 @@ class PaymentController extends \yii\web\Controller
         $merchant = \Yii::$app->get('alfapay');
         $result = $merchant->checkStatus($orderId);
         //Проверяем статус оплаты если всё хорошо обновим инвойс и редерекним
-        if (isset($result['OrderStatus']) && ($result['OrderStatus'] != $merchant->successStatus)) {
+        if (isset($result['OrderStatus']) && ($result['OrderStatus'] == $merchant->successStatus)) {
             //обработка при успешной оплате $model->related_id номер заказа
             echo 'ok';
         } else {
