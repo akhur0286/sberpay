@@ -2,11 +2,13 @@
 
 namespace akhur0286\sberpay;
 
+use akhur0286\sberpay\models\SberpayInvoice;
 use Yii;
 use yii\base\BaseObject;
 use yii\base\ErrorException;
 use yii\base\InvalidConfigException;
 use yii\helpers\Json;
+use yii\helpers\Url;
 use yii\web\Response;
 
 class Merchant extends BaseObject
@@ -14,7 +16,7 @@ class Merchant extends BaseObject
     public $merchantLogin;
 
     public $merchantPassword;
-
+    
     /**
      * @var bool Если true будет использован тестовый сервер
      */
@@ -58,7 +60,7 @@ class Merchant extends BaseObject
 
     public function init()
     {
-        if (!$this->merchantLogin || !$this->merchantPassword || !$this->returnUrl || !$this->failUrl) {
+        if (!$this->merchantLogin || !$this->merchantPassword || !$this->returnUrl || !$this->failUrl || !$this->orderModel) {
             throw new InvalidConfigException('Модуль настроен не правильно, пожалуйсто прочтите документацию');
         }
 
@@ -75,11 +77,19 @@ class Merchant extends BaseObject
      */
     public function create($orderID, $sum, $description = null, $jsonParams = null)
     {
+        $relatedModel = $this->getRelatedModel();
+
+        $invoice = SberpayInvoice::findOne(['related_id' => $orderID, 'related_model' => $relatedModel]);
+
+        if ($invoice) {
+            return Yii::$app->response->redirect($invoice->url);
+        }
+
         $data = [
             'orderNumber' => $orderID,
             'amount' => $sum * 100,
-            'returnUrl' => $this->returnUrl,
-            'failUrl' => $this->failUrl,
+            'returnUrl' => Url::to($this->returnUrl, true),
+            'failUrl' => Url::to($this->failUrl, true),
         ];
         if ($description) {
             $data['description'] = $description;
@@ -89,6 +99,26 @@ class Merchant extends BaseObject
         }
 
         $response = $this->send('register.do', $data);
+
+        if (array_key_exists('errorCode', $response)) {
+            throw new ErrorException($response['errorMessage']);
+        }
+        $orderId = $response['orderId'];
+        $formUrl = $response['formUrl'];
+
+        SberpayInvoice::addSberbank($orderID, $this->relatedModel, $orderId, $formUrl, $data);
+
+        return Yii::$app->response->redirect($formUrl);
+    }
+
+    public function continue($orderID, $sum)
+    {
+        $data = [
+            'orderId' => $orderID,
+            'amount' => $sum * 100,
+        ];
+
+        $response = $this->send('deposit.do', $data);
 
         if (array_key_exists('errorCode', $response)) {
             throw new ErrorException($response['errorMessage']);
@@ -136,5 +166,10 @@ class Merchant extends BaseObject
         curl_close($curl);
 
         return Json::decode($out);
+    }
+
+    public function getRelatedModel()
+    {
+        return strtolower(yii\helpers\StringHelper::basename($this->orderModel));
     }
 }
