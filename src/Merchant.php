@@ -172,4 +172,12 @@ class Merchant extends BaseObject
     {
         return strtolower(yii\helpers\StringHelper::basename($this->orderModel));
     }
+
+    /**
+     * @return int
+     */
+    public function getSuccessStatus()
+    {
+        return self::STATUS_SUCCESS;
+    }
 }

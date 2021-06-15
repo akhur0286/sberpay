@@ -2,30 +2,95 @@
 ===========================================================
 Библиотека для приема платежей через интернет для Сбербанк.
 
-Installation
+Установка с помощью Composer
 ------------
 
-The preferred way to install this extension is through [composer](http://getcomposer.org/download/).
-
-Either run
 
 ```
-php composer.phar require --prefer-dist akhur0286/yii2-sberpay "*"
+php composer.phar require akhur/yii2-sberpay "*"
 ```
 
-or add
+или добавьте в composer.json
 
 ```
-"akhur0286/yii2-sberpay": "*"
+"akhur/yii2-sberpay": "*"
 ```
 
-to the require section of your `composer.json` file.
-
-
-Usage
+Подключение компонента
 -----
 
-Once the extension is installed, simply use it in your code by  :
-
 ```php
-<?= \akhur0286\sberpay\AutoloadExample::widget(); ?>```
+[
+    'components' => [
+        'sberpay' => [
+            'class' => 'akhur0286\sberpay\Merchant',
+            'sessionTimeoutSecs' => 60 * 60 * 24 * 7,
+            'merchantLogin' => '',
+            'merchantPassword' => '',
+            'orderModel' => '', //модель таблицы заказов
+            'isTest' => false,
+            'registerPreAuth' => false,
+            'returnUrl' => '/payment/result-payment',
+            'failUrl' => '/payment/error-payment',
+        ],
+        //..
+    ],
+];
+```
+
+Пример работы библиотеки
+-----
+
+```
+class PaymentController extends \yii\web\Controller
+{
+    /**
+     * @inheritdoc
+     */
+    public function actions()
+    {
+        return [
+            'result-payment' => [
+                'class' => '\akhur0286\sberpay\actions\BaseAction',
+                'callback' => [$this, 'resultCallback'],
+            ],
+            'error-payment' => [
+                'class' => '\akhur0286\sberpay\actions\BaseAction',
+                'callback' => [$this, 'failCallback'],
+            ],
+        ];
+    }
+
+    public function resultCallback($orderId)
+    {
+        /* @var $model SberpayInvoice */
+        $model = SberpayInvoice::findOne(['orderId' => $orderId]);
+        if (is_null($model)) {
+            throw new NotFoundHttpException();
+        }
+
+        $merchant = \Yii::$app->get('sberpay');
+        $result = $merchant->checkStatus($orderId);
+        //Проверяем статус оплаты если всё хорошо обновим инвойс и редерекним
+        if (isset($result['OrderStatus']) && ($result['OrderStatus'] != $merchant->successStatus)) {
+            //обработка при успешной оплате $model->related_id номер заказа
+            echo 'ok';
+        } else {
+            $this->redirect($merchant->failUrl.'?orderId=' . $orderId);
+        }
+    }
+    
+    public function failCallback($orderId)
+    {
+        /* @var $model SberpayInvoice */
+        $model = SberpayInvoice::findOne(['orderId' => $orderId]);
+        if (is_null($model)) {
+            throw new NotFoundHttpException();
+        }
+        //вывод страницы ошибки $model->related_id номер заказа
+
+        echo 'error payment';
+    }
+}
+```
+
