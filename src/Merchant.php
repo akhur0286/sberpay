@@ -16,7 +16,7 @@ class Merchant extends BaseObject
     public $merchantLogin;
 
     public $merchantPassword;
-    
+
     /**
      * @var bool Если true будет использован тестовый сервер
      */
@@ -86,7 +86,7 @@ class Merchant extends BaseObject
         }
 
         $data = [
-            'orderNumber' => $orderID,
+            'orderNumber' => $orderID . '-' . $relatedModel,
             'amount' => $sum * 100,
             'returnUrl' => Url::to($this->returnUrl, true),
             'failUrl' => Url::to($this->failUrl, true),
@@ -127,6 +127,13 @@ class Merchant extends BaseObject
         $formUrl = $response['formUrl'];
 
         return Yii::$app->response->redirect($formUrl);
+    }
+
+    public function complete($orderId)
+    {
+        $post = [];
+        $post['orderId'] = $orderId;
+        return $this->send($this->actionStatus, $post);
     }
 
     /**
