@@ -79,7 +79,7 @@ class Merchant extends BaseObject
     {
         $relatedModel = $this->getRelatedModel();
 
-        $invoice = SberpayInvoice::findOne(['related_id' => $orderID, 'related_model' => $relatedModel]);
+        $invoice = SberpayInvoice::findOne(['related_id' => $orderID . '-' . $relatedModel, 'related_model' => $relatedModel]);
 
         if ($invoice) {
             return Yii::$app->response->redirect($invoice->url);
