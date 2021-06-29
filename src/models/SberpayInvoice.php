@@ -14,7 +14,7 @@ use function is_array;
  * This is the model class for table "sberpay_invoice".
  *
  * @property int $id
- * @property int $related_id
+ * @property string $related_id
  * @property string $related_model
  * @property string $orderId
  * @property int $created_at
@@ -38,9 +38,9 @@ class SberpayInvoice extends ActiveRecord
     public function rules()
     {
         return [
-            [['related_id', 'created_at', 'paid_at'], 'integer'],
+            [['created_at', 'paid_at'], 'integer'],
             [['related_id', 'related_model'], 'required'],
-            [['orderId'], 'string'],
+            [['related_id', 'orderId'], 'string'],
             [['data'], 'safe'],
             [['url'], 'string', 'max' => 255],
         ];
@@ -83,7 +83,7 @@ class SberpayInvoice extends ActiveRecord
     public static function addSberbank($relatedID, $relatedModel, $orderID, $url, $data = [])
     {
         $model = new self();
-        $model->related_id = $relatedID;
+        $model->related_id = $relatedID . '-' . $relatedModel;
         $model->related_model = $relatedModel;
         $model->orderId = $orderID;
         $model->url = $url;
@@ -92,13 +92,25 @@ class SberpayInvoice extends ActiveRecord
         return $model;
     }
 
-    public static function getOrderID($relatedID, $relatedModle)
+    public static function getOrderID($relatedID, $relatedModel)
     {
-        $model = self::findOne(['related_id' => $relatedID, 'related_model' => $relatedModle]);
+        $model = self::findOne(['related_id' => $relatedID . '-' . $relatedModel, 'related_model' => $relatedModel]);
         if ($model) {
             return $model->orderId;
         }
 
         return null;
+    }
+
+    /**
+     * Возвращаем orderNumber удалив название модели с конца
+     * @return string
+     */
+    public function getOrderNumber()
+    {
+        $parts = explode('-', $this->related_id);
+        array_pop($parts);
+
+        return implode('-', $parts);
     }
 }
